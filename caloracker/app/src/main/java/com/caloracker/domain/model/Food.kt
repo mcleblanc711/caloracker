@@ -33,8 +33,21 @@ data class NutritionInfo(
  * Contains predicted food labels with confidence scores.
  */
 data class FoodDetectionResult(
-    val predictions: List<FoodPrediction>
+    val predictions: List<FoodPrediction>,
+    val topConfidence: Float = predictions.firstOrNull()?.confidence ?: 0f,
+    val source: DetectionSource = DetectionSource.LOCAL,
+    val suggestCloudFallback: Boolean = false,
+    val cloudFallbackReason: String? = null
 )
+
+/**
+ * Source of food detection result.
+ */
+enum class DetectionSource {
+    LOCAL,      // TensorFlow Lite on-device
+    CLOUD,      // Claude Vision API
+    HYBRID      // Local detection with cloud-enhanced nutrition data
+}
 
 /**
  * A single food prediction from TensorFlow Lite model.

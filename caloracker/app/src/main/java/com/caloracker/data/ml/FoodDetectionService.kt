@@ -33,7 +33,7 @@ class FoodDetectionService(private val context: Context) {
 
     // Results configuration
     private val maxResults = 5
-    private val confidenceThreshold = 0.1f
+    private val confidenceThreshold = 0.3f
 
     companion object {
         private const val TAG = "FoodDetectionService"

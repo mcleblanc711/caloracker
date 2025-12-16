@@ -6,6 +6,7 @@ import android.util.Log
 import com.caloracker.data.ml.FoodDetectionService
 import com.caloracker.data.remote.RetrofitClient
 import com.caloracker.data.remote.dto.UsdaFood
+import com.caloracker.domain.model.DetectionSource
 import com.caloracker.domain.model.Food
 import com.caloracker.domain.model.FoodDetectionResult
 import com.caloracker.domain.model.FoodPrediction
@@ -26,6 +27,11 @@ class NutritionRepository(private val context: Context) {
 
     companion object {
         private const val TAG = "NutritionRepository"
+
+        // Confidence thresholds for cloud fallback decisions
+        const val HIGH_CONFIDENCE_THRESHOLD = 0.7f    // Trust local result fully
+        const val MEDIUM_CONFIDENCE_THRESHOLD = 0.4f  // Suggest cloud fallback
+        // Below MEDIUM_CONFIDENCE_THRESHOLD: automatic cloud fallback recommended
     }
 
     /**
@@ -46,8 +52,13 @@ class NutritionRepository(private val context: Context) {
      * Detect food from an image using TensorFlow Lite.
      * Runs entirely on-device, no network required.
      *
+     * Returns confidence-based fallback suggestions:
+     * - High confidence (>= 0.7): No fallback needed
+     * - Medium confidence (0.4-0.7): Suggest cloud fallback as option
+     * - Low confidence (< 0.4): Recommend automatic cloud fallback
+     *
      * @param bitmap The food image to analyze
-     * @return Result containing list of food predictions with confidence scores
+     * @return Result containing list of food predictions with confidence scores and fallback metadata
      */
     suspend fun detectFoodFromImage(bitmap: Bitmap): Result<FoodDetectionResult> =
         withContext(Dispatchers.IO) {
@@ -55,7 +66,16 @@ class NutritionRepository(private val context: Context) {
                 val predictions = foodDetectionService.classifyImage(bitmap)
 
                 if (predictions.isEmpty()) {
-                    return@withContext Result.Error("No food detected in image")
+                    // No predictions at all - strongly recommend cloud fallback
+                    return@withContext Result.Success(
+                        FoodDetectionResult(
+                            predictions = emptyList(),
+                            topConfidence = 0f,
+                            source = DetectionSource.LOCAL,
+                            suggestCloudFallback = true,
+                            cloudFallbackReason = "Could not identify food in image"
+                        )
+                    )
                 }
 
                 // Convert service predictions to domain predictions
@@ -67,7 +87,30 @@ class NutritionRepository(private val context: Context) {
                     )
                 }
 
-                Result.Success(FoodDetectionResult(predictions = domainPredictions))
+                val topConfidence = domainPredictions.first().confidence
+
+                // Determine if cloud fallback should be suggested based on confidence
+                val (suggestFallback, fallbackReason) = when {
+                    topConfidence >= HIGH_CONFIDENCE_THRESHOLD -> {
+                        false to null
+                    }
+                    topConfidence >= MEDIUM_CONFIDENCE_THRESHOLD -> {
+                        true to "Confidence is moderate (${(topConfidence * 100).toInt()}%). Cloud analysis may improve accuracy."
+                    }
+                    else -> {
+                        true to "Low confidence (${(topConfidence * 100).toInt()}%). Recommend cloud analysis for better results."
+                    }
+                }
+
+                Result.Success(
+                    FoodDetectionResult(
+                        predictions = domainPredictions,
+                        topConfidence = topConfidence,
+                        source = DetectionSource.LOCAL,
+                        suggestCloudFallback = suggestFallback,
+                        cloudFallbackReason = fallbackReason
+                    )
+                )
             } catch (e: Exception) {
                 Log.e(TAG, "Error detecting food from image", e)
                 Result.Error("Food detection failed: ${e.message}", e)
