@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Caloracker</string>
+
+    <!-- Navigation -->
+    <string name="nav_today">Today</string>
+    <string name="nav_history">History</string>
+
+    <!-- Today Fragment -->
+    <string name="today_title">Today\'s Intake</string>
+    <string name="calories_label">Calories</string>
+    <string name="protein_label">Protein</string>
+    <string name="carbs_label">Carbs</string>
+    <string name="fat_label">Fat</string>
+    <string name="add_food">Add Food</string>
+    <string name="take_photo">Take Photo</string>
+    <string name="total_calories">%d / %d cal</string>
+    <string name="grams_format">%dg</string>
+
+    <!-- History Fragment -->
+    <string name="history_title">History</string>
+    <string name="select_date">Select Date</string>
+    <string name="no_logs_found">No food logs for this date</string>
+
+    <!-- Food Confirmation Fragment -->
+    <string name="confirm_food">Confirm Food</string>
+    <string name="select_food">Select the correct food:</string>
+    <string name="portion_size">Portion Size</string>
+    <string name="nutrition_info">Nutrition Information</string>
+    <string name="confirm">Confirm</string>
+    <string name="cancel">Cancel</string>
+    <string name="retry_photo">Retry Photo</string>
+
+    <!-- Food Item -->
+    <string name="delete_food">Delete</string>
+    <string name="edit_food">Edit</string>
+
+    <!-- Messages -->
+    <string name="loading">Loading…</string>
+    <string name="error_occurred">An error occurred</string>
+    <string name="network_error">Network error. Please check your connection.</string>
+    <string name="camera_permission_required">Camera permission is required</string>
+    <string name="food_added_success">Food added successfully</string>
+    <string name="food_deleted_success">Food deleted</string>
+
+    <!-- Content Descriptions -->
+    <string name="food_image_desc">Food image</string>
+    <string name="camera_preview_desc">Camera preview</string>
+    <string name="capture_button_desc">Capture photo</string>
+</resources>
