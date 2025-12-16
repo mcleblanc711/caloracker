@@ -1,8 +1,17 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("com.google.devtools.ksp")
     id("androidx.navigation.safeargs.kotlin")
+}
+
+// Load local.properties for API keys
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localProperties.load(localPropertiesFile.inputStream())
 }
 
 android {
@@ -24,6 +33,12 @@ android {
         // TensorFlow Lite model configuration
         buildConfigField("String", "TFLITE_MODEL_FILE", "\"food_model.tflite\"")
         buildConfigField("String", "TFLITE_LABELS_FILE", "\"food_labels.txt\"")
+
+        // Claude API configuration (optional - for cloud fallback)
+        // Add CLAUDE_API_KEY to local.properties (which is gitignored)
+        buildConfigField("String", "CLAUDE_API_KEY", "\"${localProperties.getProperty("CLAUDE_API_KEY", "")}\"")
+        buildConfigField("String", "CLAUDE_API_VERSION", "\"2023-06-01\"")
+        buildConfigField("String", "CLAUDE_MODEL", "\"claude-3-5-sonnet-20241022\"")
     }
 
     buildTypes {
@@ -73,7 +88,8 @@ dependencies {
     implementation("org.tensorflow:tensorflow-lite:2.14.0")
     implementation("org.tensorflow:tensorflow-lite-support:0.4.4")
     implementation("org.tensorflow:tensorflow-lite-metadata:0.4.4")
-    implementation("org.tensorflow:tensorflow-lite-gpu:2.14.0") // Optional GPU acceleration
+    implementation("org.tensorflow:tensorflow-lite-gpu:2.14.0")
+    implementation("org.tensorflow:tensorflow-lite-gpu-api:2.14.0") // Required for GPU delegate compatibility
 
     // Lifecycle components
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0")

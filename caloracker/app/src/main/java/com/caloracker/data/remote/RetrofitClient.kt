@@ -57,4 +57,34 @@ object RetrofitClient {
     val usdaApi: UsdaApi by lazy {
         retrofit.create(UsdaApi::class.java)
     }
+
+    // Claude API configuration
+    private const val CLAUDE_BASE_URL = "https://api.anthropic.com/"
+
+    /**
+     * Retrofit instance for Claude API.
+     */
+    private val claudeRetrofit: Retrofit by lazy {
+        Retrofit.Builder()
+            .baseUrl(CLAUDE_BASE_URL)
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+    }
+
+    /**
+     * Get the Claude API service instance.
+     * @return ClaudeApi instance
+     */
+    val claudeApi: ClaudeApi by lazy {
+        claudeRetrofit.create(ClaudeApi::class.java)
+    }
+
+    /**
+     * Check if Claude API key is configured.
+     * @return true if API key is set and not empty
+     */
+    fun isApiKeyConfigured(): Boolean {
+        return BuildConfig.CLAUDE_API_KEY.isNotBlank()
+    }
 }

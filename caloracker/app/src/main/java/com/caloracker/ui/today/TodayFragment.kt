@@ -17,9 +17,9 @@ import com.caloracker.R
 import com.caloracker.databinding.FragmentTodayBinding
 import com.caloracker.ui.adapters.FoodLogAdapter
 import com.caloracker.util.DateUtils
-import com.caloracker.util.Extensions.gone
-import com.caloracker.util.Extensions.showToast
-import com.caloracker.util.Extensions.visible
+import com.caloracker.util.gone
+import com.caloracker.util.showToast
+import com.caloracker.util.visible
 import java.io.File
 
 /**

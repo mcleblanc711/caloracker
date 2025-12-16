@@ -15,6 +15,7 @@ import com.caloracker.data.repository.FoodRepository
 import com.caloracker.data.repository.NutritionRepository
 import com.caloracker.domain.model.DetectionSource
 import com.caloracker.domain.model.Food
+import com.caloracker.domain.model.FoodAnalysisResult
 import com.caloracker.domain.model.FoodDetectionResult
 import com.caloracker.domain.model.NutritionInfo
 import com.caloracker.domain.model.Result
@@ -246,8 +247,8 @@ class FoodConfirmationViewModel(application: Application) : AndroidViewModel(app
             is Result.Success -> {
                 val analysis = result.data
                 _selectedFood.value = analysis.primaryFood.copy(imageUri = imageUri.toString())
-                _alternatives.value = analysis.alternatives.map {
-                    it.copy(imageUri = imageUri.toString())
+                _alternatives.value = analysis.alternatives.map { food ->
+                    food.copy(imageUri = imageUri.toString())
                 }
                 _error.value = null
                 Log.d(TAG, "Cloud detection complete: ${analysis.primaryFood.name}")

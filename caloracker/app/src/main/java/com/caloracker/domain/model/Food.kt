@@ -57,5 +57,13 @@ data class FoodPrediction(
     val confidence: Float,
     val displayName: String = label.replace("_", " ")
         .split(" ")
-        .joinToString(" ") { it.capitalize() }
+        .joinToString(" ") { word -> word.replaceFirstChar { it.uppercase() } }
+)
+
+/**
+ * Result of food analysis from Claude Vision API.
+ */
+data class FoodAnalysisResult(
+    val primaryFood: Food,
+    val alternatives: List<Food>
 )

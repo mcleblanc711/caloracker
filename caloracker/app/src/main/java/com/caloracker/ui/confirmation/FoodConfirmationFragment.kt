@@ -14,9 +14,9 @@ import com.caloracker.R
 import com.caloracker.databinding.FragmentFoodConfirmationBinding
 import com.caloracker.domain.model.Food
 import com.caloracker.ui.adapters.FoodSuggestionAdapter
-import com.caloracker.util.Extensions.gone
-import com.caloracker.util.Extensions.showToast
-import com.caloracker.util.Extensions.visible
+import com.caloracker.util.gone
+import com.caloracker.util.showToast
+import com.caloracker.util.visible
 
 /**
  * Fragment for confirming food detection from Claude vision API.

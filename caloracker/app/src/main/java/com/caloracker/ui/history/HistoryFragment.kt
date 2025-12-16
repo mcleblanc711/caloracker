@@ -10,8 +10,8 @@ import androidx.fragment.app.viewModels
 import com.caloracker.databinding.FragmentHistoryBinding
 import com.caloracker.ui.adapters.FoodLogAdapter
 import com.caloracker.util.DateUtils
-import com.caloracker.util.Extensions.gone
-import com.caloracker.util.Extensions.visible
+import com.caloracker.util.gone
+import com.caloracker.util.visible
 import java.util.*
 
 /**
