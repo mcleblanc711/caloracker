@@ -9,6 +9,8 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.caloracker.data.local.AppDatabase
+import com.caloracker.data.local.dao.CloudFallbackLogDao
+import com.caloracker.data.local.entity.CloudFallbackLog
 import com.caloracker.data.repository.FoodRepository
 import com.caloracker.data.repository.NutritionRepository
 import com.caloracker.domain.model.DetectionSource
@@ -28,6 +30,7 @@ class FoodConfirmationViewModel(application: Application) : AndroidViewModel(app
 
     private val foodRepository: FoodRepository
     private val nutritionRepository: NutritionRepository
+    private val cloudFallbackLogDao: CloudFallbackLogDao
     private val context = application
 
     // Selected food (initially the primary food from detection)
@@ -61,6 +64,11 @@ class FoodConfirmationViewModel(application: Application) : AndroidViewModel(app
     // TFLite initialization state
     private var isTfLiteInitialized = false
 
+    // Track local prediction for fallback logging
+    private var lastLocalPrediction: String? = null
+    private var lastLocalConfidence: Float = 0f
+    private var lastFallbackReason: String = "unknown"
+
     companion object {
         private const val TAG = "FoodConfirmationVM"
     }
@@ -70,6 +78,7 @@ class FoodConfirmationViewModel(application: Application) : AndroidViewModel(app
         val database = AppDatabase.getDatabase(application)
         foodRepository = FoodRepository(database.foodLogDao())
         nutritionRepository = NutritionRepository(application)
+        cloudFallbackLogDao = database.cloudFallbackLogDao()
 
         // Initialize TFLite model
         initializeTfLite()
@@ -104,6 +113,11 @@ class FoodConfirmationViewModel(application: Application) : AndroidViewModel(app
             _error.value = null
             _loadingStatus.value = "Analyzing image locally..."
 
+            // Reset fallback tracking
+            lastLocalPrediction = null
+            lastLocalConfidence = 0f
+            lastFallbackReason = "unknown"
+
             try {
                 // First, try local TFLite detection
                 if (isTfLiteInitialized) {
@@ -113,6 +127,10 @@ class FoodConfirmationViewModel(application: Application) : AndroidViewModel(app
                             is Result.Success -> {
                                 val detection = localResult.data
 
+                                // Track local prediction for fallback logging
+                                lastLocalPrediction = detection.predictions.firstOrNull()?.displayName
+                                lastLocalConfidence = detection.topConfidence
+
                                 // Check if we should use local results or fall back to cloud
                                 if (detection.predictions.isNotEmpty() &&
                                     detection.topConfidence >= NutritionRepository.MEDIUM_CONFIDENCE_THRESHOLD) {
@@ -121,11 +139,17 @@ class FoodConfirmationViewModel(application: Application) : AndroidViewModel(app
                                     return@launch
                                 } else {
                                     // Low confidence - fall back to cloud
+                                    lastFallbackReason = if (detection.predictions.isEmpty()) {
+                                        "no_prediction"
+                                    } else {
+                                        "low_confidence"
+                                    }
                                     Log.d(TAG, "Low confidence (${detection.topConfidence}), falling back to cloud")
                                     _loadingStatus.value = "Getting better results from cloud..."
                                 }
                             }
                             is Result.Error -> {
+                                lastFallbackReason = "tflite_error"
                                 Log.w(TAG, "Local detection failed: ${localResult.message}")
                                 _loadingStatus.value = "Trying cloud analysis..."
                             }
@@ -133,6 +157,7 @@ class FoodConfirmationViewModel(application: Application) : AndroidViewModel(app
                         }
                     }
                 } else {
+                    lastFallbackReason = "tflite_not_initialized"
                     _loadingStatus.value = "Using cloud analysis..."
                 }
 
@@ -199,6 +224,7 @@ class FoodConfirmationViewModel(application: Application) : AndroidViewModel(app
 
     /**
      * Analyze food using Claude Vision API (cloud fallback).
+     * Also logs the fallback event for training data collection.
      */
     private suspend fun analyzeWithCloudApi(imageUri: Uri) {
         _detectionSource.value = DetectionSource.CLOUD
@@ -225,6 +251,12 @@ class FoodConfirmationViewModel(application: Application) : AndroidViewModel(app
                 }
                 _error.value = null
                 Log.d(TAG, "Cloud detection complete: ${analysis.primaryFood.name}")
+
+                // Log this fallback for training data collection
+                logCloudFallback(
+                    foodName = analysis.primaryFood.name,
+                    imageUri = imageUri.toString()
+                )
             }
             is Result.Error -> {
                 _error.value = result.message
@@ -233,6 +265,29 @@ class FoodConfirmationViewModel(application: Application) : AndroidViewModel(app
         }
 
         _isLoading.value = false
+    }
+
+    /**
+     * Log a cloud fallback event for future training data collection.
+     * Tracks what TFLite missed so we can improve the model.
+     */
+    private suspend fun logCloudFallback(foodName: String, imageUri: String?) {
+        try {
+            val log = CloudFallbackLog(
+                timestamp = System.currentTimeMillis(),
+                foodName = foodName,
+                localPrediction = lastLocalPrediction,
+                localConfidence = lastLocalConfidence,
+                fallbackReason = lastFallbackReason,
+                imageUri = imageUri,
+                exported = false
+            )
+            cloudFallbackLogDao.insert(log)
+            Log.d(TAG, "Logged cloud fallback: $foodName (local was: $lastLocalPrediction at ${(lastLocalConfidence * 100).toInt()}%)")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to log cloud fallback", e)
+            // Non-critical error - don't fail the main flow
+        }
     }
 
     /**

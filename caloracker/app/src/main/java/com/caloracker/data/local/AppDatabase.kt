@@ -4,7 +4,9 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import com.caloracker.data.local.dao.CloudFallbackLogDao
 import com.caloracker.data.local.dao.FoodLogDao
+import com.caloracker.data.local.entity.CloudFallbackLog
 import com.caloracker.data.local.entity.FoodLog
 
 /**
@@ -12,8 +14,8 @@ import com.caloracker.data.local.entity.FoodLog
  * Contains all entities and provides DAOs.
  */
 @Database(
-    entities = [FoodLog::class],
-    version = 1,
+    entities = [FoodLog::class, CloudFallbackLog::class],
+    version = 2,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -22,6 +24,11 @@ abstract class AppDatabase : RoomDatabase() {
      * Get the FoodLog DAO.
      */
     abstract fun foodLogDao(): FoodLogDao
+
+    /**
+     * Get the CloudFallbackLog DAO for tracking items that needed cloud fallback.
+     */
+    abstract fun cloudFallbackLogDao(): CloudFallbackLogDao
 
     companion object {
         @Volatile
